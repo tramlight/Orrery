@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" fill="none">
+  <rect width="512" height="512" fill="#040508" />
+
+  <!-- Subtle radial crosshairs -->
+  <path d="M 256 78 L 256 434 M 78 256 L 434 256" stroke="#38BDF8" stroke-opacity="0.14" stroke-width="2" />
+
+  <!-- Outer concentric astrolabe ring (soft glow + crisp core) -->
+  <circle cx="256" cy="256" r="168" stroke="#38BDF8" stroke-opacity="0.18" stroke-width="12" />
+  <circle cx="256" cy="256" r="168" stroke="#38BDF8" stroke-opacity="0.92" stroke-width="3.5" />
+
+  <!-- Segmented inner orbital ring -->
+  <circle cx="256" cy="256" r="144" stroke="#67E8F9" stroke-opacity="0.55" stroke-width="2" stroke-dasharray="14 10" />
+
+  <!-- 12 cardinal radial ticks -->
+  <g stroke="#BAE6FD" stroke-opacity="0.88" stroke-width="3" stroke-linecap="round">
+    <line x1="256" y1="88" x2="256" y2="108" />
+    <line x1="256" y1="404" x2="256" y2="424" />
+    <line x1="88" y1="256" x2="108" y2="256" />
+    <line x1="404" y1="256" x2="424" y2="256" />
+    <line x1="340" y1="110.5" x2="330" y2="127.8" />
+    <line x1="172" y1="401.5" x2="182" y2="384.2" />
+    <line x1="401.5" y1="172" x2="384.2" y2="182" />
+    <line x1="110.5" y1="340" x2="127.8" y2="330" />
+    <line x1="401.5" y1="340" x2="384.2" y2="330" />
+    <line x1="110.5" y1="172" x2="127.8" y2="182" />
+    <line x1="340" y1="401.5" x2="330" y2="384.2" />
+    <line x1="172" y1="110.5" x2="182" y2="127.8" />
+  </g>
+
+  <!-- Counter-rotated inscribed hexagram triangles -->
+  <polygon
+    points="256,120 373.8,324 138.2,324"
+    stroke="#38BDF8"
+    stroke-opacity="0.22"
+    stroke-width="10"
+    stroke-linejoin="round"
+  />
+  <polygon
+    points="256,120 373.8,324 138.2,324"
+    stroke="#BAE6FD"
+    stroke-opacity="0.95"
+    stroke-width="3.2"
+    stroke-linejoin="round"
+  />
+
+  <polygon
+    points="256,392 138.2,188 373.8,188"
+    stroke="#22D3EE"
+    stroke-opacity="0.18"
+    stroke-width="9"
+    stroke-linejoin="round"
+  />
+  <polygon
+    points="256,392 138.2,188 373.8,188"
+    stroke="#38BDF8"
+    stroke-opacity="0.78"
+    stroke-width="2.6"
+    stroke-linejoin="round"
+  />
+
+  <!-- Orbital nodes at vertices -->
+  <circle cx="256" cy="120" r="6" fill="#E0F2FE" />
+  <circle cx="256" cy="392" r="6" fill="#38BDF8" />
+  <circle cx="373.8" cy="324" r="5" fill="#E0F2FE" />
+  <circle cx="138.2" cy="324" r="5" fill="#E0F2FE" />
+  <circle cx="373.8" cy="188" r="5" fill="#38BDF8" />
+  <circle cx="138.2" cy="188" r="5" fill="#38BDF8" />
+
+  <!-- Core aperture ring & luminous pivot -->
+  <circle cx="256" cy="256" r="46" stroke="#38BDF8" stroke-opacity="0.24" stroke-width="10" />
+  <circle cx="256" cy="256" r="46" stroke="#BAE6FD" stroke-opacity="0.92" stroke-width="3" />
+  <polygon points="256,222 290,256 256,290 222,256" stroke="#67E8F9" stroke-opacity="0.88" stroke-width="2.4" />
+  <circle cx="256" cy="256" r="14" fill="#38BDF8" fill-opacity="0.32" />
+  <circle cx="256" cy="256" r="7" fill="#FFFFFF" />
+</svg>

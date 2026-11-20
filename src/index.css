@@ -1,0 +1,69 @@
+@import "tailwindcss";
+@custom-variant dark (&:where(.dark, .dark *));
+
+@layer base {
+  html,
+  body {
+    background-color: #040508;
+    color: #e2e8f0;
+    overscroll-behavior-y: none;
+    -webkit-tap-highlight-color: transparent;
+    touch-action: pan-y;
+  }
+}
+
+/* Custom ultra-minimal dark scrollbar for desktop browsers */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: #040508;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.16);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.32);
+}
+
+@keyframes rare-arrival-border {
+  0% {
+    opacity: 0;
+  }
+  18% {
+    opacity: 0.9;
+  }
+  38% {
+    opacity: 0.15;
+  }
+  58% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+
+.animate-rare-arrival {
+  animation: rare-arrival-border 0.85s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes vault-ping {
+  0% {
+    transform: scale(0.75);
+    opacity: 0.95;
+  }
+  100% {
+    transform: scale(1.85);
+    opacity: 0;
+  }
+}
+
+.animate-vault-ping {
+  animation: vault-ping 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}

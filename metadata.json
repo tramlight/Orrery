@@ -1,0 +1,6 @@
+{
+  "name": "Orrery",
+  "description": "An infinite-scroll, zero-text feed of procedurally generated vector astrolabes and arcane geometric clockwork animations.",
+  "requestFramePermissions": [],
+  "majorCapabilities": []
+}
