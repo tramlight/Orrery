@@ -3,7 +3,8 @@
 
 @layer base {
   html,
-  body {
+  body,
+  #root {
     background-color: #040508;
     color: #e2e8f0;
     overscroll-behavior-y: none;
@@ -66,4 +67,21 @@
 
 .animate-vault-ping {
   animation: vault-ping 0.65s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes ptr-threshold-flash {
+  0% {
+    transform: scale(0.78);
+    opacity: 0.98;
+    box-shadow: 0 0 18px rgba(255, 255, 255, 0.85), inset 0 0 10px rgba(255, 255, 255, 0.5);
+  }
+  100% {
+    transform: scale(1.75);
+    opacity: 0;
+    box-shadow: 0 0 2px rgba(255, 255, 255, 0);
+  }
+}
+
+.animate-ptr-flash {
+  animation: ptr-threshold-flash 0.42s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

@@ -1,4 +1,4 @@
-const CACHE_NAME = 'orrery-shell-v1';
+const CACHE_NAME = 'orrery-shell-v2';
 
 const APP_SHELL_ASSETS = [
   './',
@@ -20,9 +20,22 @@ self.addEventListener('install', (event) => {
   event.waitUntil(
     caches
       .open(CACHE_NAME)
-      .then((cache) => cache.addAll(APP_SHELL_ASSETS.map(resolveScopedUrl)))
+      .then((cache) =>
+        Promise.all(
+          APP_SHELL_ASSETS.map((asset) => {
+            const url = resolveScopedUrl(asset);
+            return cache.add(new Request(url, { cache: 'reload' }));
+          }),
+        ),
+      )
       .then(() => self.skipWaiting()),
   );
+});
+
+self.addEventListener('message', (event) => {
+  if (event.data && event.data.type === 'SKIP_WAITING') {
+    self.skipWaiting();
+  }
 });
 
 self.addEventListener('activate', (event) => {

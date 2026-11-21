@@ -15,8 +15,8 @@ export const GeometricAvatar: React.FC<{
   avatar: AvatarSpec;
   palette: AstrolabePalette;
   rarity: Rarity;
-}> = React.memo(({ avatar, palette, rarity }) => {
-  const strokeMain = rarity === 'rare' ? palette.primaryHex : palette.primaryHex;
+}> = React.memo(({ avatar, palette }) => {
+  const strokeMain = palette.primaryHex;
   const strokeSub = palette.secondaryHex;
   const accent = palette.accentHex;
 
@@ -34,30 +34,30 @@ export const GeometricAvatar: React.FC<{
 
       {/* Outer geometric frame */}
       {avatar.frame === 'circle' && (
-        <circle cx="16" cy="16" r="13.5" stroke={strokeMain} strokeOpacity="0.65" strokeWidth="1.1" />
+        <circle cx="16" cy="16" r="13.5" stroke={strokeMain} strokeOpacity="0.72" strokeWidth="1.15" />
       )}
       {avatar.frame === 'hexagon' && (
         <polygon
           points={polygonPoints(6, 16, 16, 13.8, -90)}
           stroke={strokeMain}
-          strokeOpacity="0.68"
-          strokeWidth="1.1"
+          strokeOpacity="0.74"
+          strokeWidth="1.15"
         />
       )}
       {avatar.frame === 'octagon' && (
         <polygon
           points={polygonPoints(8, 16, 16, 13.8, -67.5)}
           stroke={strokeMain}
-          strokeOpacity="0.68"
-          strokeWidth="1.1"
+          strokeOpacity="0.74"
+          strokeWidth="1.15"
         />
       )}
       {avatar.frame === 'diamond' && (
         <polygon
           points={polygonPoints(4, 16, 16, 14.2, -90)}
           stroke={strokeMain}
-          strokeOpacity="0.72"
-          strokeWidth="1.1"
+          strokeOpacity="0.78"
+          strokeWidth="1.15"
         />
       )}
 
@@ -66,7 +66,7 @@ export const GeometricAvatar: React.FC<{
         <path
           d="M 16 4.5 L 16 27.5 M 4.5 16 L 27.5 16"
           stroke={strokeSub}
-          strokeOpacity="0.35"
+          strokeOpacity="0.4"
           strokeWidth="0.9"
         />
       )}
@@ -74,7 +74,7 @@ export const GeometricAvatar: React.FC<{
       {/* Inner symmetric polygon sigil */}
       <polygon
         points={polygonPoints(avatar.symmetry, 16, 16, 9.8 * avatar.ringScale + 2.5, avatar.rotationDeg - 90)}
-        stroke={accent}
+        stroke={strokeSub}
         strokeOpacity="0.9"
         strokeWidth="1.15"
       />
@@ -88,8 +88,8 @@ export const GeometricAvatar: React.FC<{
             6.1,
             avatar.rotationDeg - 90 + 180 / avatar.symmetry,
           )}
-          stroke={strokeSub}
-          strokeOpacity="0.72"
+          stroke={accent}
+          strokeOpacity="0.82"
           strokeWidth="1"
         />
       )}
@@ -103,51 +103,53 @@ export const GlyphHandle: React.FC<{
   glyphs: GlyphSpec[];
   palette: AstrolabePalette;
   rarity: Rarity;
-}> = React.memo(({ glyphs, palette, rarity }) => {
-  const strokeColor = rarity === 'rare' ? palette.accentHex : '#94A3B8';
-  const strokeOpacity = rarity === 'rare' ? 0.88 : 0.72;
-
+}> = React.memo(({ glyphs, palette }) => {
+  // Apply each post's selected palette consistently to its procedural glyph handle
   return (
     <div className="flex items-center gap-[3px]" aria-hidden="true">
-      {glyphs.map((glyph, idx) => (
-        <svg
-          key={idx}
-          width="11"
-          height="13"
-          viewBox="0 0 10 12"
-          fill="none"
-          className="shrink-0"
-        >
-          {glyph.strokes.map((stroke, sIdx) => {
-            if (stroke.type === 'circle') {
+      {glyphs.map((glyph, idx) => {
+        const strokeColor = idx % 3 === 2 ? palette.secondaryHex : palette.primaryHex;
+        const strokeOpacity = idx % 3 === 2 ? 0.84 : 0.78;
+        return (
+          <svg
+            key={idx}
+            width="11"
+            height="13"
+            viewBox="0 0 10 12"
+            fill="none"
+            className="shrink-0"
+          >
+            {glyph.strokes.map((stroke, sIdx) => {
+              if (stroke.type === 'circle') {
+                return (
+                  <circle
+                    key={sIdx}
+                    cx={stroke.cx}
+                    cy={stroke.cy}
+                    r={stroke.r}
+                    fill={stroke.filled ? palette.accentHex : 'none'}
+                    fillOpacity={stroke.filled ? 0.88 : 0}
+                    stroke={stroke.filled ? 'none' : strokeColor}
+                    strokeOpacity={strokeOpacity}
+                    strokeWidth="1.15"
+                  />
+                );
+              }
               return (
-                <circle
+                <path
                   key={sIdx}
-                  cx={stroke.cx}
-                  cy={stroke.cy}
-                  r={stroke.r}
-                  fill={stroke.filled ? strokeColor : 'none'}
-                  fillOpacity={stroke.filled ? strokeOpacity : 0}
-                  stroke={stroke.filled ? 'none' : strokeColor}
+                  d={stroke.d}
+                  stroke={strokeColor}
                   strokeOpacity={strokeOpacity}
                   strokeWidth="1.15"
+                  strokeLinecap="square"
+                  strokeLinejoin="miter"
                 />
               );
-            }
-            return (
-              <path
-                key={sIdx}
-                d={stroke.d}
-                stroke={strokeColor}
-                strokeOpacity={strokeOpacity}
-                strokeWidth="1.15"
-                strokeLinecap="square"
-                strokeLinejoin="miter"
-              />
-            );
-          })}
-        </svg>
-      ))}
+            })}
+          </svg>
+        );
+      })}
     </div>
   );
 });
@@ -159,8 +161,8 @@ export const RarityGlyph: React.FC<{
   if (rarity === 'common') {
     return (
       <svg width="18" height="18" viewBox="0 0 20 20" fill="none" aria-hidden="true">
-        <circle cx="10" cy="10" r="4" stroke={palette.secondaryHex} strokeOpacity="0.45" strokeWidth="1.1" />
-        <circle cx="10" cy="10" r="1.2" fill={palette.primaryHex} fillOpacity="0.55" />
+        <circle cx="10" cy="10" r="4" stroke={palette.primaryHex} strokeOpacity="0.52" strokeWidth="1.1" />
+        <circle cx="10" cy="10" r="1.2" fill={palette.accentHex} fillOpacity="0.7" />
       </svg>
     );
   }
@@ -171,12 +173,12 @@ export const RarityGlyph: React.FC<{
         <polygon
           points="10,2.5 17.5,10 10,17.5 2.5,10"
           stroke={palette.primaryHex}
-          strokeOpacity="0.72"
+          strokeOpacity="0.78"
           strokeWidth="1.15"
         />
         <polygon
           points="10,6.2 13.8,10 10,13.8 6.2,10"
-          stroke={palette.accentHex}
+          stroke={palette.secondaryHex}
           strokeOpacity="0.92"
           strokeWidth="1.1"
         />
@@ -184,7 +186,7 @@ export const RarityGlyph: React.FC<{
     );
   }
 
-  // Rare: Distinct luminous 4-point astrolabe star + concentric ring in accent hue
+  // Rare: Distinct 4-point astrolabe star + concentric ring in the post's own palette
   return (
     <svg
       width="20"
@@ -194,15 +196,15 @@ export const RarityGlyph: React.FC<{
       aria-hidden="true"
       style={{ filter: `drop-shadow(0 0 5px ${palette.primaryHex}99)` }}
     >
-      <circle cx="12" cy="12" r="8.2" stroke={palette.primaryHex} strokeOpacity="0.55" strokeWidth="1" />
+      <circle cx="12" cy="12" r="8.2" stroke={palette.secondaryHex} strokeOpacity="0.62" strokeWidth="1" />
       <path
         d="M 12 2.2 L 14.1 9.9 L 21.8 12 L 14.1 14.1 L 12 21.8 L 9.9 14.1 L 2.2 12 L 9.9 9.9 Z"
         stroke={palette.accentHex}
         strokeWidth="1.25"
         fill={palette.primaryHex}
-        fillOpacity="0.22"
+        fillOpacity="0.24"
       />
-      <circle cx="12" cy="12" r="1.5" fill="#FFFFFF" fillOpacity="0.92" />
+      <circle cx="12" cy="12" r="1.5" fill="#FFFFFF" fillOpacity="0.95" />
     </svg>
   );
 });

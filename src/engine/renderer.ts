@@ -27,8 +27,46 @@ function rgba(rgb: RGB, alpha: number): string {
   return `rgba(${rgb[0]},${rgb[1]},${rgb[2]},${alpha.toFixed(3)})`;
 }
 
-function resolveColor(spec: AstrolabeSpec, role: AstrolabeLayer['colorRole']): RGB {
-  if (role === 'accent') return spec.palette.accentRgb;
+/**
+ * Produces a high-lightness tint of a palette RGB color (blended toward white by `amount` 0..1)
+ * so inner highlights glow brightly in-hue instead of blowing out to pure #FFFFFF.
+ */
+function tintColor(rgb: RGB, amount: number): RGB {
+  return [
+    Math.min(255, Math.round(rgb[0] + (255 - rgb[0]) * amount)),
+    Math.min(255, Math.round(rgb[1] + (255 - rgb[1]) * amount)),
+    Math.min(255, Math.round(rgb[2] + (255 - rgb[2]) * amount)),
+  ];
+}
+
+function getLayerRadius(layer: AstrolabeLayer): number {
+  switch (layer.kind) {
+    case 'orbitalSystem':
+      return layer.orbitRadius;
+    case 'harmonicCurve':
+      return layer.baseRadius;
+    case 'astrolabeRete':
+      return layer.centerOffset + layer.ringRadius * 0.5;
+    default:
+      return layer.radius;
+  }
+}
+
+function resolveColor(
+  spec: AstrolabeSpec,
+  role: AstrolabeLayer['colorRole'],
+  isDense: boolean,
+  layerIndex: number,
+): RGB {
+  if (role === 'accent') {
+    if (isDense) {
+      // On dense/Rare stacks, use a bright palette-tinted highlight rather than near-white
+      // so overlapping additive strokes preserve vivid hue fidelity
+      const base = layerIndex % 2 === 0 ? spec.palette.primaryRgb : spec.palette.secondaryRgb;
+      return tintColor(base, 0.34);
+    }
+    return spec.palette.accentRgb;
+  }
   if (role === 'secondary') return spec.palette.secondaryRgb;
   return spec.palette.primaryRgb;
 }
@@ -36,6 +74,7 @@ function resolveColor(spec: AstrolabeSpec, role: AstrolabeLayer['colorRole']): R
 /**
  * Crisp neon vector stroke using layered semi-transparent additive passes.
  * Avoids heavy shadowBlur shaders so 60fps stays rock-solid across mobile GPUs.
+ * Uses a high-lightness tint of the stroke hue for the inner filament (never pure white).
  */
 function strokeGlowing(
   ctx: CanvasRenderingContext2D,
@@ -44,22 +83,23 @@ function strokeGlowing(
   width: number,
   alpha: number,
   scaleBoost: number,
-  whiteCore = false,
+  highlightCore = false,
+  haloFactor = 1,
 ): void {
-  const w = Math.max(0.65, width * scaleBoost);
+  const w = Math.max(0.55, width * scaleBoost);
 
   // Outer aura pass
   ctx.beginPath();
   drawPath();
-  ctx.lineWidth = w * 4.4;
-  ctx.strokeStyle = rgba(rgb, alpha * 0.085);
+  ctx.lineWidth = w * (haloFactor < 1 ? 3.8 : 4.4);
+  ctx.strokeStyle = rgba(rgb, alpha * 0.085 * haloFactor);
   ctx.stroke();
 
   // Mid halo pass
   ctx.beginPath();
   drawPath();
-  ctx.lineWidth = w * 2.1;
-  ctx.strokeStyle = rgba(rgb, alpha * 0.24);
+  ctx.lineWidth = w * (haloFactor < 1 ? 1.9 : 2.1);
+  ctx.strokeStyle = rgba(rgb, alpha * 0.24 * haloFactor);
   ctx.stroke();
 
   // Crisp primary vector core
@@ -69,16 +109,20 @@ function strokeGlowing(
   ctx.strokeStyle = rgba(rgb, Math.min(1, alpha * 0.94));
   ctx.stroke();
 
-  // Optional razor white-hot inner filament for Rare accents & active resonance
-  if (whiteCore) {
+  // Optional razor high-lightness tinted inner filament (tinted hue, never raw #FFFFFF)
+  if (highlightCore) {
+    const tinted = tintColor(rgb, haloFactor < 1 ? 0.45 : 0.62);
     ctx.beginPath();
     drawPath();
-    ctx.lineWidth = Math.max(0.5, w * 0.42);
-    ctx.strokeStyle = `rgba(255,255,255,${(alpha * 0.48).toFixed(3)})`;
+    ctx.lineWidth = Math.max(0.45, w * 0.4);
+    ctx.strokeStyle = rgba(tinted, alpha * (haloFactor < 1 ? 0.34 : 0.46));
     ctx.stroke();
   }
 }
 
+/**
+ * Luminous accent dot / orbital node—pure white pinpoint is reserved strictly here.
+ */
 function drawGlowDot(
   ctx: CanvasRenderingContext2D,
   x: number,
@@ -88,12 +132,12 @@ function drawGlowDot(
   alpha: number,
 ): void {
   ctx.beginPath();
-  ctx.arc(x, y, r * 2.5, 0, Math.PI * 2);
+  ctx.arc(x, y, r * 2.4, 0, Math.PI * 2);
   ctx.fillStyle = rgba(rgb, alpha * 0.16);
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(x, y, r * 1.4, 0, Math.PI * 2);
+  ctx.arc(x, y, r * 1.35, 0, Math.PI * 2);
   ctx.fillStyle = rgba(rgb, alpha * 0.42);
   ctx.fill();
 
@@ -103,8 +147,8 @@ function drawGlowDot(
   ctx.fill();
 
   ctx.beginPath();
-  ctx.arc(x, y, r * 0.45, 0, Math.PI * 2);
-  ctx.fillStyle = `rgba(255,255,255,${(alpha * 0.72).toFixed(3)})`;
+  ctx.arc(x, y, r * 0.44, 0, Math.PI * 2);
+  ctx.fillStyle = `rgba(255,255,255,${Math.min(0.95, alpha * 0.85).toFixed(3)})`;
   ctx.fill();
 }
 
@@ -119,15 +163,15 @@ export function renderAstrolabe(
   const cy = height * 0.5;
   const minDim = Math.min(width, height);
   const R = minDim * (state.isFullscreen ? 0.455 : 0.435);
-  const scaleBoost = Math.max(0.75, Math.min(1.5, minDim / 390));
+  const baseScaleBoost = Math.max(0.75, Math.min(1.5, minDim / 390));
 
-  // Deep void dark-mode background
+  // Pure dark-mode void backdrop for crisp additive neon contrast
   ctx.globalCompositeOperation = 'source-over';
-  ctx.fillStyle = state.isFullscreen ? '#020306' : '#030509';
+  ctx.fillStyle = state.isFullscreen ? '#000000' : '#020306';
   ctx.fillRect(0, 0, width, height);
 
   // Subtle precision framing reticle in outer corners (never organic, strictly digital)
-  drawFrameReticles(ctx, width, height, spec, state, scaleBoost);
+  drawFrameReticles(ctx, width, height, spec, state, baseScaleBoost);
 
   // Switch to additive blending for crisp luminous vector overlays
   ctx.save();
@@ -136,12 +180,15 @@ export function renderAstrolabe(
   ctx.lineCap = 'round';
   ctx.lineJoin = 'round';
 
+  const isRare = spec.rarity === 'rare';
+  const isDense = isRare || spec.layers.length >= 8;
+
   // Subtle ambient boost when resonated or pulsing
   const pulseBoost =
     state.pulseProgress > 0 && state.pulseProgress < 1
-      ? Math.sin(state.pulseProgress * Math.PI) * 0.28
+      ? Math.sin(state.pulseProgress * Math.PI) * (isDense ? 0.18 : 0.28)
       : 0;
-  const resonanceAlphaMult = (state.isResonated ? 1.12 : 1.0) + pulseBoost;
+  const resonanceAlphaMult = (state.isResonated ? (isDense ? 1.08 : 1.12) : 1.0) + pulseBoost;
 
   // Ultra-faint central coordinate crosshairs (strictly precision instrument lines)
   ctx.beginPath();
@@ -149,54 +196,111 @@ export function renderAstrolabe(
   ctx.lineTo(R * 0.95, 0);
   ctx.moveTo(0, -R * 0.95);
   ctx.lineTo(0, R * 0.95);
-  ctx.lineWidth = 0.75 * scaleBoost;
-  ctx.strokeStyle = rgba(spec.palette.secondaryRgb, spec.rarity === 'rare' ? 0.08 : 0.05);
+  ctx.lineWidth = 0.75 * baseScaleBoost;
+  ctx.strokeStyle = rgba(spec.palette.secondaryRgb, isDense ? 0.055 : 0.05);
   ctx.stroke();
 
-  const isRare = spec.rarity === 'rare';
+  // Density scaling: keep Common & Uncommon at 100% brightness/width,
+  // while scaling down alpha (~55-64%) and slightly thinning inner strokes on Rare/dense stacks
+  // so overlapping additive layers stay richly colored instead of clipping to #FFFFFF.
+  const haloFactor = isDense ? 0.66 : 1;
 
   for (let i = 0; i < spec.layers.length; i++) {
     const layer = spec.layers[i];
-    const rgb = resolveColor(spec, layer.colorRole);
-    const alpha = Math.min(1, layer.opacity * resonanceAlphaMult);
+    const normR = getLayerRadius(layer);
+    const isInnerLayer = normR <= 0.64;
+
+    const densityAlphaScale = isDense
+      ? layer.kind === 'astrolabeRete' || layer.kind === 'chordMatrix'
+        ? 0.52
+        : isInnerLayer
+        ? 0.57
+        : 0.64
+      : 1;
+
+    const densityWidthScale = isDense ? (isInnerLayer ? 0.8 : 0.9) : 1;
+    const layerScaleBoost = baseScaleBoost * densityWidthScale;
+
+    const rgb = resolveColor(spec, layer.colorRole, isDense, i);
+    const alpha = Math.min(1, layer.opacity * resonanceAlphaMult * densityAlphaScale);
     const angle = layer.initialPhase + state.phaseTime * layer.rotationSpeed * layer.direction;
-    const whiteCore =
-      (isRare && layer.colorRole === 'accent') ||
-      (state.isResonated && layer.colorRole === 'accent');
+    const highlightCore = isDense
+      ? layer.kind === 'coreSigil' || (state.isResonated && layer.colorRole === 'primary')
+      : layer.colorRole === 'accent' || (state.isResonated && layer.colorRole === 'primary');
 
     ctx.save();
     ctx.rotate(angle);
 
     switch (layer.kind) {
       case 'concentricRing':
-        drawConcentricRing(ctx, layer, R, rgb, alpha, scaleBoost, whiteCore);
+        drawConcentricRing(ctx, layer, R, rgb, alpha, layerScaleBoost, highlightCore, haloFactor);
         break;
       case 'tickDial':
-        drawTickDial(ctx, layer, R, rgb, alpha, scaleBoost, whiteCore);
+        drawTickDial(ctx, layer, R, rgb, alpha, layerScaleBoost, highlightCore, haloFactor);
         break;
       case 'inscribedPolygon':
-        drawInscribedPolygon(ctx, layer, R, rgb, alpha, scaleBoost, whiteCore);
+        drawInscribedPolygon(ctx, layer, R, rgb, alpha, layerScaleBoost, highlightCore, haloFactor);
         break;
       case 'orbitalSystem':
-        drawOrbitalSystem(ctx, layer, R, rgb, alpha, scaleBoost, state.phaseTime, whiteCore);
+        drawOrbitalSystem(
+          ctx,
+          layer,
+          R,
+          rgb,
+          alpha,
+          layerScaleBoost,
+          state.phaseTime,
+          highlightCore,
+          haloFactor,
+        );
         break;
       case 'harmonicCurve':
-        drawHarmonicCurve(ctx, layer, R, rgb, alpha, scaleBoost, state.wallTime, whiteCore);
+        drawHarmonicCurve(
+          ctx,
+          layer,
+          R,
+          rgb,
+          alpha,
+          layerScaleBoost,
+          state.wallTime,
+          highlightCore,
+          haloFactor,
+        );
         break;
       case 'chordMatrix':
-        drawChordMatrix(ctx, layer, R, rgb, alpha, scaleBoost);
+        drawChordMatrix(ctx, layer, R, rgb, alpha, layerScaleBoost, haloFactor);
         break;
       case 'clockworkGear':
-        drawClockworkGear(ctx, layer, R, rgb, alpha, scaleBoost, whiteCore);
+        drawClockworkGear(ctx, layer, R, rgb, alpha, layerScaleBoost, highlightCore, haloFactor);
         break;
       case 'astrolabeRete':
-        drawAstrolabeRete(ctx, layer, R, rgb, alpha, scaleBoost, whiteCore);
+        drawAstrolabeRete(ctx, layer, R, rgb, alpha, layerScaleBoost, highlightCore, haloFactor);
         break;
       case 'vernierArcs':
-        drawVernierArcs(ctx, layer, R, rgb, alpha, scaleBoost, state.wallTime, whiteCore);
+        drawVernierArcs(
+          ctx,
+          layer,
+          R,
+          rgb,
+          alpha,
+          layerScaleBoost,
+          state.wallTime,
+          highlightCore,
+          haloFactor,
+        );
         break;
       case 'coreSigil':
-        drawCoreSigil(ctx, layer, R, rgb, alpha, scaleBoost, state.wallTime, whiteCore);
+        drawCoreSigil(
+          ctx,
+          layer,
+          R,
+          rgb,
+          alpha,
+          layerScaleBoost,
+          state.wallTime,
+          highlightCore,
+          haloFactor,
+        );
         break;
     }
 
@@ -208,17 +312,18 @@ export function renderAstrolabe(
     const p = state.pulseProgress;
     const eased = 1 - Math.pow(1 - p, 3);
     const waveR = R * (0.12 + eased * 0.94);
-    const waveAlpha = (1 - p) * 0.85;
+    const waveAlpha = (1 - p) * (isDense ? 0.65 : 0.85);
     strokeGlowing(
       ctx,
       () => {
         ctx.arc(0, 0, waveR, 0, Math.PI * 2);
       },
-      spec.palette.accentRgb,
-      1.6,
+      tintColor(spec.palette.primaryRgb, 0.35),
+      1.5,
       waveAlpha,
-      scaleBoost,
+      baseScaleBoost,
       true,
+      haloFactor,
     );
   }
 
@@ -233,11 +338,12 @@ export function renderAstrolabe(
       strokeGlowing(
         ctx,
         () => ctx.arc(0, 0, r1, 0, Math.PI * 2),
-        spec.palette.accentRgb,
-        1.4,
-        (1 - ring1) * 0.72,
-        scaleBoost,
+        tintColor(spec.palette.secondaryRgb, 0.3),
+        1.35,
+        (1 - ring1) * 0.62,
+        baseScaleBoost,
         true,
+        haloFactor,
       );
     }
     if (ring2 > 0 && ring2 < 1) {
@@ -246,10 +352,11 @@ export function renderAstrolabe(
         ctx,
         () => ctx.arc(0, 0, r2, 0, Math.PI * 2),
         spec.palette.primaryRgb,
-        1.3,
-        (1 - ring2) * 0.82,
-        scaleBoost,
+        1.25,
+        (1 - ring2) * 0.7,
+        baseScaleBoost,
         true,
+        haloFactor,
       );
     }
   }
@@ -328,7 +435,8 @@ function drawConcentricRing(
   rgb: RGB,
   alpha: number,
   scaleBoost: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const rad = layer.radius * R;
 
@@ -351,11 +459,29 @@ function drawConcentricRing(
     }
   };
 
-  strokeGlowing(ctx, () => traceArcs(rad), rgb, layer.lineWidth, alpha, scaleBoost, whiteCore);
+  strokeGlowing(
+    ctx,
+    () => traceArcs(rad),
+    rgb,
+    layer.lineWidth,
+    alpha,
+    scaleBoost,
+    highlightCore,
+    haloFactor,
+  );
 
   if (layer.doubleStroke) {
     const r2 = rad - layer.doubleGap * R;
-    strokeGlowing(ctx, () => traceArcs(r2), rgb, layer.lineWidth * 0.72, alpha * 0.65, scaleBoost);
+    strokeGlowing(
+      ctx,
+      () => traceArcs(r2),
+      rgb,
+      layer.lineWidth * 0.72,
+      alpha * 0.65,
+      scaleBoost,
+      false,
+      haloFactor,
+    );
   }
 
   ctx.setLineDash([]);
@@ -384,6 +510,8 @@ function drawConcentricRing(
           layer.lineWidth * 0.9,
           alpha,
           scaleBoost,
+          false,
+          haloFactor,
         );
       }
     }
@@ -397,7 +525,8 @@ function drawTickDial(
   rgb: RGB,
   alpha: number,
   scaleBoost: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const rad = layer.radius * R;
   const dir = layer.inward ? -1 : 1;
@@ -426,6 +555,8 @@ function drawTickDial(
     layer.lineWidth * 0.78,
     alpha * 0.58,
     scaleBoost,
+    false,
+    haloFactor,
   );
 
   // Major ticks with higher luminous intensity
@@ -460,7 +591,8 @@ function drawTickDial(
     layer.lineWidth * 1.15,
     alpha * 0.95,
     scaleBoost,
-    whiteCore,
+    highlightCore,
+    haloFactor,
   );
 }
 
@@ -471,7 +603,8 @@ function drawInscribedPolygon(
   rgb: RGB,
   alpha: number,
   scaleBoost: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const baseRad = layer.radius * R;
 
@@ -483,6 +616,8 @@ function drawInscribedPolygon(
       layer.lineWidth * 0.65,
       alpha * 0.45,
       scaleBoost,
+      false,
+      haloFactor,
     );
   }
 
@@ -518,7 +653,8 @@ function drawInscribedPolygon(
       layer.lineWidth * (n === 0 ? 1 : 0.82),
       layerAlpha,
       scaleBoost,
-      whiteCore && n === 0,
+      highlightCore && n === 0,
+      haloFactor,
     );
 
     if (n === 0 && layer.vertexNodes !== 'none') {
@@ -539,6 +675,8 @@ function drawInscribedPolygon(
             layer.lineWidth * 0.85,
             alpha,
             scaleBoost,
+            false,
+            haloFactor,
           );
           drawGlowDot(ctx, vx, vy, nodeR * 0.2, rgb, alpha);
         } else {
@@ -557,7 +695,8 @@ function drawInscribedPolygon(
             layer.lineWidth * 0.85,
             alpha,
             scaleBoost,
-            whiteCore,
+            highlightCore,
+            haloFactor,
           );
         }
       }
@@ -573,7 +712,8 @@ function drawOrbitalSystem(
   alpha: number,
   scaleBoost: number,
   phaseTime: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const orbitR = layer.orbitRadius * R;
   const bodyR = layer.bodyRadius * R;
@@ -587,6 +727,8 @@ function drawOrbitalSystem(
       layer.lineWidth * 0.65,
       alpha * 0.36,
       scaleBoost,
+      false,
+      haloFactor,
     );
   }
 
@@ -604,6 +746,8 @@ function drawOrbitalSystem(
       layer.lineWidth * 0.6,
       alpha * 0.32,
       scaleBoost,
+      false,
+      haloFactor,
     );
   }
 
@@ -624,6 +768,8 @@ function drawOrbitalSystem(
       layer.lineWidth * 0.72,
       alpha * 0.42,
       scaleBoost,
+      false,
+      haloFactor,
     );
   }
 
@@ -648,7 +794,8 @@ function drawOrbitalSystem(
         layer.lineWidth,
         alpha,
         scaleBoost,
-        whiteCore,
+        highlightCore,
+        haloFactor,
       );
       drawGlowDot(ctx, bx, by, bodyR * 0.25, rgb, alpha);
     } else if (layer.bodyStyle === 'crosshair') {
@@ -665,7 +812,8 @@ function drawOrbitalSystem(
         layer.lineWidth * 0.85,
         alpha,
         scaleBoost,
-        whiteCore,
+        highlightCore,
+        haloFactor,
       );
     } else {
       strokeGlowing(
@@ -675,7 +823,8 @@ function drawOrbitalSystem(
         layer.lineWidth,
         alpha,
         scaleBoost,
-        whiteCore,
+        highlightCore,
+        haloFactor,
       );
       drawGlowDot(ctx, bx, by, bodyR * 0.3, rgb, alpha);
     }
@@ -690,6 +839,8 @@ function drawOrbitalSystem(
         layer.lineWidth * 0.6,
         alpha * 0.44,
         scaleBoost,
+        false,
+        haloFactor,
       );
 
       const epiStep = (Math.PI * 2) / Math.max(1, layer.epicycleBodies);
@@ -712,7 +863,8 @@ function drawHarmonicCurve(
   alpha: number,
   scaleBoost: number,
   wallTime: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const breathe = 1 + Math.sin(wallTime * layer.breatheFreq) * layer.breatheAmp;
   const samples = layer.samples;
@@ -795,7 +947,8 @@ function drawHarmonicCurve(
     layer.lineWidth,
     alpha,
     scaleBoost,
-    whiteCore,
+    highlightCore,
+    haloFactor,
   );
 }
 
@@ -806,6 +959,7 @@ function drawChordMatrix(
   rgb: RGB,
   alpha: number,
   scaleBoost: number,
+  haloFactor: number,
 ): void {
   const stepAngle = (Math.PI * 2) / layer.points;
   for (let l = 0; l < layer.layers; l++) {
@@ -824,6 +978,8 @@ function drawChordMatrix(
       layer.lineWidth * (l === 0 ? 1 : 0.8),
       alpha * (l === 0 ? 1 : 0.7),
       scaleBoost,
+      false,
+      haloFactor,
     );
   }
 }
@@ -835,7 +991,8 @@ function drawClockworkGear(
   rgb: RGB,
   alpha: number,
   scaleBoost: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const baseR = layer.radius * R;
   const outerR = baseR + layer.toothDepth * R;
@@ -877,7 +1034,8 @@ function drawClockworkGear(
     layer.lineWidth,
     alpha,
     scaleBoost,
-    whiteCore,
+    highlightCore,
+    haloFactor,
   );
 
   // Inner structural rim + symmetrical spokes
@@ -896,6 +1054,8 @@ function drawClockworkGear(
     layer.lineWidth * 0.75,
     alpha * 0.56,
     scaleBoost,
+    false,
+    haloFactor,
   );
 }
 
@@ -906,7 +1066,8 @@ function drawAstrolabeRete(
   rgb: RGB,
   alpha: number,
   scaleBoost: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const offset = layer.centerOffset * R;
   const ringR = layer.ringRadius * R;
@@ -927,7 +1088,8 @@ function drawAstrolabeRete(
     layer.lineWidth,
     alpha,
     scaleBoost,
-    whiteCore,
+    highlightCore,
+    haloFactor,
   );
 
   if (layer.drawIntersectionNodes) {
@@ -954,7 +1116,8 @@ function drawVernierArcs(
   alpha: number,
   scaleBoost: number,
   wallTime: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const rad = layer.radius * R;
   const thick = layer.radialThickness * R;
@@ -994,7 +1157,8 @@ function drawVernierArcs(
     layer.lineWidth,
     alpha,
     scaleBoost,
-    whiteCore,
+    highlightCore,
+    haloFactor,
   );
 }
 
@@ -1006,7 +1170,8 @@ function drawCoreSigil(
   alpha: number,
   scaleBoost: number,
   wallTime: number,
-  whiteCore: boolean,
+  highlightCore: boolean,
+  haloFactor: number,
 ): void {
   const rad = layer.radius * R;
   const pulse = 1 + Math.sin(wallTime * 1.6) * 0.06;
@@ -1068,8 +1233,9 @@ function drawCoreSigil(
     layer.lineWidth,
     alpha,
     scaleBoost,
-    whiteCore,
+    highlightCore,
+    haloFactor,
   );
 
-  drawGlowDot(ctx, 0, 0, Math.max(2.2, rad * 0.14), rgb, alpha);
+  drawGlowDot(ctx, 0, 0, Math.max(2.2, rad * 0.14), rgb, Math.min(1, alpha * 1.15));
 }

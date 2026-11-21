@@ -153,10 +153,10 @@ export const PostCard: React.FC<PostCardProps> = React.memo(
             aria-label="Toggle vault bookmark"
             className="absolute bottom-1 right-1 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-lg bg-[#05070D]/70 backdrop-blur-sm transition-transform active:scale-90 cursor-pointer"
             style={{
-              filter: `drop-shadow(0 0 6px ${spec.palette.accentHex}99)`,
+              filter: `drop-shadow(0 0 6px ${spec.palette.primaryHex}bb)`,
             }}
           >
-            <VaultRuneIcon active={isBookmarked} color={spec.palette.accentHex} />
+            <VaultRuneIcon active={isBookmarked} color={spec.palette.primaryHex} />
           </button>
         </article>
       );
@@ -197,7 +197,7 @@ export const PostCard: React.FC<PostCardProps> = React.memo(
           type="button"
           onClick={handleStageClick}
           aria-label="Expand geometric animation"
-          className="block w-full aspect-square relative bg-[#030509] border-y border-white/[0.04] cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/70"
+          className="block w-full aspect-square relative bg-[#020306] border-y border-white/[0.04] cursor-pointer focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-cyan-400/70"
         >
           <AstrolabeCanvas
             spec={spec}
@@ -234,11 +234,11 @@ export const PostCard: React.FC<PostCardProps> = React.memo(
 
           <RuneButton
             active={isBookmarked}
-            accentHex={spec.palette.accentHex}
+            accentHex={spec.palette.primaryHex}
             onClick={handleBookmark}
             ariaLabel="Save seed to vault"
           >
-            <VaultRuneIcon active={isBookmarked} color={spec.palette.accentHex} />
+            <VaultRuneIcon active={isBookmarked} color={spec.palette.primaryHex} />
           </RuneButton>
         </footer>
       </article>

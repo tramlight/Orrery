@@ -8,124 +8,187 @@ import {
   Rarity,
 } from './types';
 
-// Curated digital astrolabe palettes (crisp high-contrast neon vectors on deep obsidian)
-const COMMON_PALETTES: readonly AstrolabePalette[] = [
+// Curated deck of 18 hand-tuned dark-mode palettes engineered for additive neon rendering on pure black.
+// Strictly two-tone (primary hue + harmonious secondary) with crisp near-white/pure-white core highlights
+// to prevent muddy 3-color additive overlap, with balanced ~65-85% saturation.
+
+// Stark high-contrast monochrome subset (~10% roll chance across any rarity tier)
+const MONOCHROME_PALETTES: readonly AstrolabePalette[] = [
   {
-    id: 'glacial-cyan',
-    primaryRgb: [56, 189, 248],
+    id: 'stark-monochrome-silver',
+    primaryRgb: [241, 245, 249],
     secondaryRgb: [148, 163, 184],
-    accentRgb: [186, 230, 253],
-    primaryHex: '#38BDF8',
+    accentRgb: [255, 255, 255],
+    primaryHex: '#F1F5F9',
     secondaryHex: '#94A3B8',
-    accentHex: '#BAE6FD',
+    accentHex: '#FFFFFF',
   },
   {
-    id: 'orbital-silver',
-    primaryRgb: [203, 213, 225],
-    secondaryRgb: [100, 116, 139],
-    accentRgb: [147, 197, 253],
-    primaryHex: '#CBD5E1',
-    secondaryHex: '#64748B',
-    accentHex: '#93C5FD',
-  },
-  {
-    id: 'meridian-aqua',
-    primaryRgb: [34, 211, 238],
-    secondaryRgb: [94, 234, 212],
-    accentRgb: [165, 243, 252],
-    primaryHex: '#22D3EE',
-    secondaryHex: '#5EEAD4',
-    accentHex: '#A5F3FC',
-  },
-  {
-    id: 'arctic-slate',
-    primaryRgb: [125, 211, 252],
-    secondaryRgb: [129, 140, 248],
-    accentRgb: [224, 242, 254],
-    primaryHex: '#7DD3FC',
-    secondaryHex: '#818CF8',
-    accentHex: '#E0F2FE',
+    id: 'monochrome-crimson',
+    primaryRgb: [239, 68, 88],
+    secondaryRgb: [185, 36, 56],
+    accentRgb: [255, 236, 240],
+    primaryHex: '#EF4458',
+    secondaryHex: '#B92438',
+    accentHex: '#FFEFF2',
   },
 ];
 
-const UNCOMMON_PALETTES: readonly AstrolabePalette[] = [
+// 16 harmonious two-tone palettes spanning the color wheel (~90% roll chance across any rarity tier)
+const CHROMATIC_PALETTES: readonly AstrolabePalette[] = [
   {
-    id: 'azure-emerald',
-    primaryRgb: [6, 182, 212],
-    secondaryRgb: [52, 211, 153],
-    accentRgb: [103, 232, 249],
-    primaryHex: '#06B6D4',
-    secondaryHex: '#34D399',
-    accentHex: '#67E8F9',
+    id: 'glacier-cyan-ice',
+    primaryRgb: [56, 189, 248],
+    secondaryRgb: [125, 211, 252],
+    accentRgb: [240, 249, 255],
+    primaryHex: '#38BDF8',
+    secondaryHex: '#7DD3FC',
+    accentHex: '#F0F9FF',
   },
   {
-    id: 'indigo-cyan',
-    primaryRgb: [129, 140, 248],
-    secondaryRgb: [56, 189, 248],
-    accentRgb: [199, 210, 254],
-    primaryHex: '#818CF8',
-    secondaryHex: '#38BDF8',
-    accentHex: '#C7D2FE',
+    id: 'crimson-ivory',
+    primaryRgb: [236, 72, 92],
+    secondaryRgb: [245, 224, 195],
+    accentRgb: [255, 248, 240],
+    primaryHex: '#EC485C',
+    secondaryHex: '#F5E0C3',
+    accentHex: '#FFF8F0',
   },
   {
-    id: 'jade-astrolabe',
-    primaryRgb: [16, 185, 129],
-    secondaryRgb: [34, 211, 238],
-    accentRgb: [167, 243, 208],
-    primaryHex: '#10B981',
-    secondaryHex: '#22D3EE',
-    accentHex: '#A7F3D0',
+    id: 'amber-copper',
+    primaryRgb: [245, 178, 52],
+    secondaryRgb: [212, 114, 62],
+    accentRgb: [255, 246, 224],
+    primaryHex: '#F5B234',
+    secondaryHex: '#D4723E',
+    accentHex: '#FFF6E0',
   },
   {
-    id: 'cobalt-violet',
-    primaryRgb: [96, 165, 250],
-    secondaryRgb: [167, 139, 250],
-    accentRgb: [191, 219, 254],
-    primaryHex: '#60A5FA',
-    secondaryHex: '#A78BFA',
-    accentHex: '#BFDBFE',
+    id: 'phosphor-emerald-mint',
+    primaryRgb: [34, 211, 148],
+    secondaryRgb: [134, 239, 198],
+    accentRgb: [236, 253, 245],
+    primaryHex: '#22D394',
+    secondaryHex: '#86EFC6',
+    accentHex: '#ECFDF5',
+  },
+  {
+    id: 'ultraviolet-lavender',
+    primaryRgb: [152, 108, 248],
+    secondaryRgb: [210, 192, 254],
+    accentRgb: [247, 242, 255],
+    primaryHex: '#986CF8',
+    secondaryHex: '#D2C0FE',
+    accentHex: '#F7F2FF',
+  },
+  {
+    id: 'cobalt-rose',
+    primaryRgb: [76, 134, 246],
+    secondaryRgb: [242, 118, 160],
+    accentRgb: [250, 244, 255],
+    primaryHex: '#4C86F6',
+    secondaryHex: '#F276A0',
+    accentHex: '#FAF4FF',
+  },
+  {
+    id: 'teal-acid-lime',
+    primaryRgb: [28, 198, 188],
+    secondaryRgb: [188, 238, 72],
+    accentRgb: [245, 255, 232],
+    primaryHex: '#1CC6BC',
+    secondaryHex: '#BCEE48',
+    accentHex: '#F5FFE8',
+  },
+  {
+    id: 'vermilion-peach',
+    primaryRgb: [244, 96, 64],
+    secondaryRgb: [252, 186, 148],
+    accentRgb: [255, 244, 238],
+    primaryHex: '#F46040',
+    secondaryHex: '#FCBA94',
+    accentHex: '#FFF4EE',
+  },
+  {
+    id: 'indigo-champagne',
+    primaryRgb: [110, 122, 242],
+    secondaryRgb: [242, 218, 174],
+    accentRgb: [255, 250, 240],
+    primaryHex: '#6E7AF2',
+    secondaryHex: '#F2DAAE',
+    accentHex: '#FFFAF0',
+  },
+  {
+    id: 'cerulean-gold',
+    primaryRgb: [46, 166, 238],
+    secondaryRgb: [246, 194, 68],
+    accentRgb: [255, 251, 236],
+    primaryHex: '#2EA6EE',
+    secondaryHex: '#F6C244',
+    accentHex: '#FFFBEC',
+  },
+  {
+    id: 'orchid-frost',
+    primaryRgb: [228, 88, 190],
+    secondaryRgb: [158, 216, 252],
+    accentRgb: [255, 244, 253],
+    primaryHex: '#E458BE',
+    secondaryHex: '#9ED8FC',
+    accentHex: '#FFF4FD',
+  },
+  {
+    id: 'jade-amber',
+    primaryRgb: [36, 192, 142],
+    secondaryRgb: [244, 176, 76],
+    accentRgb: [248, 255, 244],
+    primaryHex: '#24C08E',
+    secondaryHex: '#F4B04C',
+    accentHex: '#F8FFF4',
+  },
+  {
+    id: 'sapphire-coral',
+    primaryRgb: [62, 118, 238],
+    secondaryRgb: [246, 134, 116],
+    accentRgb: [255, 245, 242],
+    primaryHex: '#3E76EE',
+    secondaryHex: '#F68674',
+    accentHex: '#FFF5F2',
+  },
+  {
+    id: 'chartreuse-steel',
+    primaryRgb: [194, 228, 66],
+    secondaryRgb: [122, 162, 204],
+    accentRgb: [249, 255, 236],
+    primaryHex: '#C2E442',
+    secondaryHex: '#7AA2CC',
+    accentHex: '#F9FFEC',
+  },
+  {
+    id: 'ruby-bronze',
+    primaryRgb: [226, 62, 114],
+    secondaryRgb: [216, 152, 92],
+    accentRgb: [255, 242, 246],
+    primaryHex: '#E23E72',
+    secondaryHex: '#D8985C',
+    accentHex: '#FFF2F6',
+  },
+  {
+    id: 'aquamarine-lilac',
+    primaryRgb: [72, 224, 206],
+    secondaryRgb: [186, 156, 248],
+    accentRgb: [242, 255, 253],
+    primaryHex: '#48E0CE',
+    secondaryHex: '#BA9CF8',
+    accentHex: '#F2FFFD',
   },
 ];
 
-// Rare palettes feature a distinct warm/spectral accent color shift
-const RARE_PALETTES: readonly AstrolabePalette[] = [
-  {
-    id: 'sovereign-gold',
-    primaryRgb: [245, 158, 11],
-    secondaryRgb: [56, 189, 248],
-    accentRgb: [253, 224, 71],
-    primaryHex: '#F59E0B',
-    secondaryHex: '#38BDF8',
-    accentHex: '#FDE047',
-  },
-  {
-    id: 'crimson-orrery',
-    primaryRgb: [251, 113, 133],
-    secondaryRgb: [251, 191, 36],
-    accentRgb: [254, 205, 211],
-    primaryHex: '#FB7185',
-    secondaryHex: '#FBBF24',
-    accentHex: '#FECDD3',
-  },
-  {
-    id: 'solar-amber',
-    primaryRgb: [251, 191, 36],
-    secondaryRgb: [251, 146, 60],
-    accentRgb: [254, 243, 199],
-    primaryHex: '#FBBF24',
-    secondaryHex: '#FB923C',
-    accentHex: '#FEF3C7',
-  },
-  {
-    id: 'spectral-rose-gold',
-    primaryRgb: [244, 114, 182],
-    secondaryRgb: [103, 232, 249],
-    accentRgb: [253, 224, 71],
-    primaryHex: '#F472B6',
-    secondaryHex: '#67E8F9',
-    accentHex: '#FDE047',
-  },
-];
+function pickDecoupledPalette(rng: SeededRandom): AstrolabePalette {
+  // ~10% chance for stark high-contrast monochrome on any tier
+  if (rng.chance(0.1)) {
+    return rng.pick(MONOCHROME_PALETTES);
+  }
+  return rng.pick(CHROMATIC_PALETTES);
+}
 
 // Valid Schlafli star polygon step values coprime to N
 function pickStarStep(rng: SeededRandom, sides: number, allowRegular = true): number {
@@ -186,12 +249,8 @@ function compileAstrolabe(seed: number): AstrolabeSpec {
       ? rng.pick([4, 5, 6, 8, 12])
       : rng.pick([3, 4, 5, 6, 8]);
 
-  const palette =
-    rarity === 'rare'
-      ? rng.pick(RARE_PALETTES)
-      : rarity === 'uncommon'
-      ? rng.pick(UNCOMMON_PALETTES)
-      : rng.pick(COMMON_PALETTES);
+  // Completely decoupled from rarity: every tier draws from the full 18-palette deck
+  const palette = pickDecoupledPalette(rng);
 
   const layers: AstrolabeLayer[] = [];
 
